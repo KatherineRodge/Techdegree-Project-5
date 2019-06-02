@@ -1,18 +1,48 @@
-let info = null;
-let cardData = [];
+//Variables
+const allKeyboardKeysRegex = /^[a-zA-Z0-9~`!@#\$%\^&\*\(\)_\-\+={\[\}\]\|\\:;"'<,>\.\?\/  ]*$/;
 const searchDiv = document.querySelector('.search-container');
 const gallery = document.getElementById('gallery');
 let body = document.getElementsByTagName('body');
 body = body[0];
-let num = 0;
 
+let info = null;
+let cardData = [];
+let cardOrder = [];
+let num = 0;
+let emptyCard = [];
+let searchCards = [];
+let searchCardLength = 0;
+let searchCardFinalElement = null;
+let searchCardFirstElement = null;
+let searchCardElement = null;
+let nextNum = 0;
+
+//functions
 function returnNum(number){
   return number;
+}
+
+function returnArray(number){
+  return emptyCard.push(number);
 }
 
 //https://plainjs.com/javascript/manipulation/insert-an-element-after-or-before-another-32/
 function insertAfter(el, referenceNode) {
     referenceNode.parentNode.insertBefore(el, referenceNode.nextSibling);
+}
+
+//calls all aspects of the modal data
+function returnModalData(numData) {
+  return modalHTML =  modalInfo(
+    (cardData[numData].results[0].picture.thumbnail),
+    (cardData[numData].results[0].name.first),
+    (cardData[numData].results[0].name.last),
+    (cardData[numData].results[0].email),
+    (cardData[numData].results[0].location.city),
+    (cardData[numData].results[0].location.state),
+    (cardData[numData].results[0].cell),
+    (cardData[numData].results[0].location.street),
+    (cardData[numData].results[0].location.postcode));
 }
 
 //Search Form
@@ -33,29 +63,62 @@ inputSubmit.setAttribute("id", "search-submit");
 searchForm.appendChild(inputText);
 searchForm.appendChild(inputSubmit);
 
+//input form
+inputSubmit.addEventListener("click", function(){
+searchCards = [];
+let cardName = document.querySelectorAll("#name");
+let inputValue = document.querySelector("#search-input").value;
+inputValue = inputValue.toLowerCase();
 
+//check input
+for(let k = 0; k < cardName.length; k++){
+var regExInput = new RegExp(inputValue);
+var regExArray = (cardName[k].textContent.match(regExInput));
+  if(regExArray === null) {
+    card[k].style.display = 'none';
+  } else {
+    card[k].style.display = 'flex';
+    searchCards.push(k);
+  }
+}
+})
 
+//creates 12 employee cards
+for(let a = 0; a < 12; a++) {
+  gallery.innerHTML += `<div class = "card">`;
+  searchCards.push(a);
+}
+const card = document.querySelectorAll(".card");
 
-for(let i= 0; i<12; i++) {
+//function to create fetch API request to gather data
+//also only returns employees with names with english caracters to work with the search bar
+function getData(num){
+  fetch('https://randomuser.me/api/')
+    .then(response => response.json())
+    .then(data => { info = getInfo((data.results[0].picture.thumbnail),
+                           (data.results[0].name.first),
+                           (data.results[0].name.last),
+                           (data.results[0].email),
+                           (data.results[0].location.city),
+                           (data.results[0].location.state));
 
-gallery.innerHTML += `<div class = "card">`
-//send request to API to get user information
-fetch('https://randomuser.me/api/')
-  .then(response => response.json())
-  .then(data => { info = getInfo((data.results[0].picture.thumbnail),
-                         (data.results[0].name.first),
-                         (data.results[0].name.last),
-                         (data.results[0].email),
-                         (data.results[0].location.city),
-                         (data.results[0].location.state));
-                  let infoDiv = document.querySelectorAll('.card');
-                  console.log(data);
-                  let currentInfo = infoDiv[i];
-                  currentInfo.innerHTML += info;
-                  cardData.push(data);
-                  });
-
+    //https://stackoverflow.com/questions/834002/regular-expression-that-includes-all-keyboard-characters-except-and
+    if (allKeyboardKeysRegex.test(data.results[0].name.first) === true && allKeyboardKeysRegex.test(data.results[0].name.last) === true) {
+      let infoDiv = document.querySelectorAll('.card');
+      let currentInfo = infoDiv[num];
+      currentInfo.innerHTML += info;
+      cardData.push(data);
+      cardOrder.push(num);
+    } else {
+      getData(num);
+    }
+  });
 };
+
+//runs getData function to supply information to the cards
+for(let h = 0; h < card.length; h++) {
+  getData(h);
+}
 
 //creates card for each employee
 //image, name, email, location
@@ -117,86 +180,91 @@ const containerInfo = `
     <hr>
     <p class="modal-text">${phone}</p>
     <p class="modal-text">${street}, ${city} ${state}, ${postcode}</p>
-    <p class="modal-text">${birthday}</p>
     `;
 return containerInfo;
 }
 
 let cards = document.querySelectorAll('.card');
+//click card to bring up more information on employee
 for (let h = 0; h < 12; h++) {
-
-  cards[h].addEventListener("click", function() {
-    num = returnNum(h);
-    modalContainer.style.display = "block";
+    cards[h].addEventListener("click", function() {
+      num = returnNum(h);
+      numData = cardOrder.indexOf(num);
+      modalContainer.style.display = "flex";
 //function to fetch modal data on click event
-    let modalHTML =  modalInfo(
-      (cardData[num].results[0].picture.thumbnail),
-      (cardData[num].results[0].name.first),
-      (cardData[num].results[0].name.last),
-      (cardData[num].results[0].email),
-      (cardData[num].results[0].location.city),
-      (cardData[num].results[0].location.state),
-      (cardData[num].results[0].cell),
-      (cardData[num].results[0].location.street),
-      (cardData[num].results[0].location.postcode),
-      (cardData[num].results[0].dob.date));
-    modal.appendChild(modalInfoContainer);
-    modalInfoContainer.innerHTML = modalHTML;
-    modal.appendChild(modalButtonContainer);
+      modalHTML = returnModalData(numData);
+      modal.appendChild(modalInfoContainer);
+      modalInfoContainer.innerHTML = modalHTML;
+      modal.appendChild(modalButtonContainer);
+
+      if (searchCards.length === 12){
+        nextNum = 1;
+      } else {
+      nextNum = searchCards.indexOf(num);
+      }
 });
-
-nextButton.onclick = function() {
-console.log(num);
-num += 1;
-
-if (num > 11) {
-  this.disabled = true;
-  prevButton.disabled = false;
-  num = num;
-} else {
-this.disabled = false;
-let modalHTML =  modalInfo(
-    (cardData[num].results[0].picture.thumbnail),
-    (cardData[num].results[0].name.first),
-    (cardData[num].results[0].name.last),
-    (cardData[num].results[0].email),
-    (cardData[num].results[0].location.city),
-    (cardData[num].results[0].location.state),
-    (cardData[num].results[0].cell),
-    (cardData[num].results[0].location.street),
-    (cardData[num].results[0].location.postcode),
-    (cardData[num].results[0].dob.date));
-modalInfoContainer.innerHTML = modalHTML;
-}
-
-}
-
-prevButton.onclick = function() {
-  console.log(num);
-  num--;
-if (num < 0) {
-  this.disabled = true;
-  nextButton.disabled = false;
-} else {
-this.disabled = false;
-let modalHTML =  modalInfo(
-    (cardData[num].results[0].picture.thumbnail),
-    (cardData[num].results[0].name.first),
-    (cardData[num].results[0].name.last),
-    (cardData[num].results[0].email),
-    (cardData[num].results[0].location.city),
-    (cardData[num].results[0].location.state),
-    (cardData[num].results[0].cell),
-    (cardData[num].results[0].location.street),
-    (cardData[num].results[0].location.postcode),
-    (cardData[num].results[0].dob.date));
-modalInfoContainer.innerHTML = modalHTML;
-}
-}
 };
 
+searchCardLength = searchCards.length;
+searchCardFinalElement = searchCards[searchCardLength - 1]
+
+//next button functionality on modal
+nextButton.addEventListener("click", function(){
+searchCardLength = searchCards.length;
+searchCardFinalElement = searchCards[searchCardLength - 1]
+
+if (num === 11 || nextNum === (searchCardLength - 1)) {
+  this.disabled = true;
+  prevButton.disabled = false;
+} else if (searchCards.length < 12) {
+  nextNum++;
+  searchCardElement = searchCards[nextNum]
+  numData = cardOrder.indexOf(searchCardElement);
+  this.disabled = false;
+  prevButton.disabled = false;
+  modalHTML = returnModalData(numData);
+  modalInfoContainer.innerHTML = modalHTML;
+} else {
+  num++;
+  numData = cardOrder.indexOf(num);
+  this.disabled = false;
+  prevButton.disabled = false;
+  modalHTML = returnModalData(numData);
+  modalInfoContainer.innerHTML = modalHTML;
+}
+});
+
+//previous button functionality on modal
+prevButton.addEventListener("click", function() {
+searchCardFirstElement = searchCards[0];
+
+if (num === 0 || nextNum === 0) {
+    this.disabled = true;
+    nextButton.disabled = false;
+} else if (searchCards.length < 12) {
+    nextNum--;
+    searchCardElement = searchCards[nextNum]
+    numData = cardOrder.indexOf(searchCardElement);
+    this.disabled = false;
+    nextButton.disabled = false;
+    modalHTML = returnModalData(numData);
+    modalInfoContainer.innerHTML = modalHTML;
+} else {
+    num--;
+    numData = cardOrder.indexOf(num);
+    this.disabled = false;
+    nextButton.disabled = false;
+    modalHTML = returnModalData(numData);
+    modalInfoContainer.innerHTML = modalHTML;
+  }
+});
+
+//close modal
 modalX.addEventListener("click", function() {
-  modalContainer.style.display = "none";
-  modalInfoContainer = document.querySelector(".modal-info-container");
-  modalInfoContainer.remove();
+    modalContainer.style.display = "none";
+    modalInfoContainer = document.querySelector(".modal-info-container");
+    modalInfoContainer.remove();
+    num = 0;
+    nextButton.disabled = false;
+    prevButton.disabled = false;
 })
